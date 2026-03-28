@@ -62,7 +62,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _exportReport(String type) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Compiling internal structural ₱type Report...')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compiling internal structural ₱type Report...')));
   }
 
   @override

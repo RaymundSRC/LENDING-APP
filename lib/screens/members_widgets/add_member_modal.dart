@@ -78,22 +78,38 @@ class _AddMemberFormState extends State<_AddMemberForm> {
     return _selectedDate.month > 1 ? _selectedDate.month - 1 : 0;
   }
 
-  double get _deficitInterestRate {
-    // A strict 1-month grace period based precisely on calendar date exactness.
-    DateTime oneMonthLater = DateTime(_selectedDate.year, _selectedDate.month + 1, _selectedDate.day);
-    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    
-    if (today.isAfter(oneMonthLater)) {
-      return 0.15;
+  DateTime _addOneMonth(DateTime date) {
+    int nextYear = date.year;
+    int nextMonth = date.month + 1;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
     }
-    return 0.10;
+    int maxDays = DateTime(nextYear, nextMonth + 1, 0).day;
+    int nextDay = date.day > maxDays ? maxDays : date.day;
+    return DateTime(nextYear, nextMonth, nextDay);
   }
 
   double get _deficitInterest {
-    if (_amount < _targetAmount) {
-      return (_targetAmount - _amount) * _deficitInterestRate;
+    if (_amount >= _targetAmount) return 0.0;
+    
+    double deficit = _targetAmount - _amount;
+    double totalDeficitInterest = 0.0;
+    
+    DateTime cycleDate = _addOneMonth(_selectedDate);
+    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    
+    while (today.isAfter(cycleDate) || cycleDate.isAtSameMomentAs(today)) {
+       DateTime penaltyDate = cycleDate.add(const Duration(days: 5));
+       if (today.isAfter(penaltyDate) || today.isAtSameMomentAs(penaltyDate)) {
+           totalDeficitInterest += (deficit * 0.15);
+       } else {
+           totalDeficitInterest += (deficit * 0.10);
+       }
+       cycleDate = _addOneMonth(cycleDate);
     }
-    return 0.0;
+    
+    return totalDeficitInterest;
   }
 
   double get _lateJoinInterest {
@@ -184,8 +200,8 @@ class _AddMemberFormState extends State<_AddMemberForm> {
                 children: [
                   Text('Interest Calculations', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
                   const SizedBox(height: 8),
-                  if (_amount < _targetAmount)
-                    Text('• Deficit Penalty (₱${(_targetAmount - _amount).toStringAsFixed(2)}): +₱${_deficitInterest.toStringAsFixed(2)} (${(_deficitInterestRate * 100).toInt()}%)', style: TextStyle(color: Colors.orange.shade800)),
+                  if (_amount < _targetAmount && _deficitInterest > 0)
+                    Text('• Deficit Penalty Evaluated: +₱${_deficitInterest.toStringAsFixed(2)}', style: TextStyle(color: Colors.orange.shade800)),
                   if (_monthsMissed > 0)
                     Text('• Late Join ($_monthsMissed months missed): +₱${_lateJoinInterest.toStringAsFixed(2)} (15%)', style: TextStyle(color: Colors.orange.shade800)),
                   if (_amount >= _targetAmount && _monthsMissed == 0)

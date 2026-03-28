@@ -39,7 +39,7 @@ class _LoansScreenState extends State<LoansScreen> {
 
   Future<void> _loadData() async {
     final loans = await StorageService.loadLoans() ?? [];
-    
+
     // Live Calendar Time-Travel Evaluator
     DateTime now = DateTime.now();
     DateTime today = DateTime(now.year, now.month, now.day);
@@ -59,40 +59,54 @@ class _LoansScreenState extends State<LoansScreen> {
           double totalInterestOwed = 0.0;
           bool isAnyPenalty = false;
 
-          while (today.isAfter(cycleDate) || cycleDate.isAtSameMomentAs(today)) {
+          Map<String, dynamic> customRates = l['customRates'] != null
+              ? Map<String, dynamic>.from(l['customRates'])
+              : {};
+
+          while (
+              today.isAfter(cycleDate) || cycleDate.isAtSameMomentAs(today)) {
             missedMonths++;
             DateTime cyclePenaltyDate = cycleDate.add(const Duration(days: 5));
-            
-            if (today.isAfter(cyclePenaltyDate) || today.isAtSameMomentAs(cyclePenaltyDate)) {
-               totalInterestOwed += (principal * 0.15);
-               isAnyPenalty = true;
-            } else {
-               totalInterestOwed += (principal * 0.10);
+            String cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
+
+            double appliedRate = 0.10;
+            if (customRates.containsKey(cycleKey)) {
+              appliedRate = (customRates[cycleKey] as num).toDouble();
+              if (appliedRate > 0.10) isAnyPenalty = true;
+            } else if (today.isAfter(cyclePenaltyDate) ||
+                today.isAtSameMomentAs(cyclePenaltyDate)) {
+              appliedRate = 0.15;
+              isAnyPenalty = true;
             }
-            
+            totalInterestOwed += (principal * appliedRate);
+
             cycleDate = _addOneMonth(cycleDate);
           }
 
           if (missedMonths == 0) totalInterestOwed = principal * 0.10;
-          
+
           bool isLate = today.isAfter(dueDate);
           String finalStatus = isLate ? 'Late' : 'Active';
           String finalRateString = isAnyPenalty ? '15%' : '10%';
 
-          if (l['status'] != finalStatus || l['interestRate'] != finalRateString || (l['remainingInterest'] as num).toDouble() != totalInterestOwed || (l['missedMonths'] ?? 0) != missedMonths) {
+          if (l['status'] != finalStatus ||
+              l['interestRate'] != finalRateString ||
+              (l['remainingInterest'] as num).toDouble() != totalInterestOwed ||
+              (l['missedMonths'] ?? 0) != missedMonths) {
             l['status'] = finalStatus;
             l['interestRate'] = finalRateString;
-            l['remainingInterest'] = double.parse(totalInterestOwed.toStringAsFixed(2));
+            l['remainingInterest'] =
+                double.parse(totalInterestOwed.toStringAsFixed(2));
             l['missedMonths'] = missedMonths;
             requiresDBUpdate = true;
           }
         } else {
           // Principal is mathematically 0. The loan is locked holding frozen remainingInterest.
           if ((l['remainingInterest'] as num).toDouble() <= 0) {
-             if (l['status'] != 'Completed') {
-                l['status'] = 'Completed';
-                requiresDBUpdate = true;
-             }
+            if (l['status'] != 'Completed') {
+              l['status'] = 'Completed';
+              requiresDBUpdate = true;
+            }
           }
         }
       } catch (e) {
@@ -114,8 +128,12 @@ class _LoansScreenState extends State<LoansScreen> {
 
   List<Map<String, dynamic>> get _filteredLoans {
     return _allLoans.where((l) {
-      final matchesSearch = l['borrower'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesStatus = _filterStatus == 'All' || l['status'] == _filterStatus;
+      final matchesSearch = l['borrower']
+          .toString()
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      final matchesStatus =
+          _filterStatus == 'All' || l['status'] == _filterStatus;
       return matchesSearch && matchesStatus;
     }).toList();
   }
@@ -131,13 +149,15 @@ class _LoansScreenState extends State<LoansScreen> {
             LoansFilterBar(
               filterStatus: _filterStatus,
               onSearchChanged: (val) => setState(() => _searchQuery = val),
-              onFilterChanged: (val) { if (val != null) setState(() => _filterStatus = val); },
+              onFilterChanged: (val) {
+                if (val != null) setState(() => _filterStatus = val);
+              },
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: _isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : LoansList(loans: _filteredLoans, onUpdate: _loadData),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : LoansList(loans: _filteredLoans, onUpdate: _loadData),
             ),
           ],
         ),
