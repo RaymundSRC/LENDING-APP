@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../theme/dashboard_theme.dart';
+import '../../../theme/dashboard_theme.dart';
 
 class AddMemberModal {
-  static void show(BuildContext context, {required Function(Map<String, dynamic>) onSave, Map<String, dynamic>? initialMember}) {
+  static void show(BuildContext context,
+      {required Function(Map<String, dynamic>) onSave,
+      Map<String, dynamic>? initialMember}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -30,7 +32,7 @@ class AddMemberModal {
 class _AddMemberForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
   final Map<String, dynamic>? initialMember;
-  
+
   const _AddMemberForm({required this.onSave, this.initialMember});
 
   @override
@@ -49,13 +51,15 @@ class _AddMemberFormState extends State<_AddMemberForm> {
     super.initState();
     _amountController.addListener(() => setState(() {}));
     _targetAmountController.addListener(() => setState(() {}));
-    
+
     if (widget.initialMember != null) {
       final m = widget.initialMember!;
       _nameController.text = m['name'] ?? '';
       _amountController.text = (m['contribution'] ?? '').toString();
       _targetAmountController.text = (m['expectedReturn'] ?? '').toString();
-      _status = m['status'] == 'Active' ? 'With Balance' : (m['status'] ?? 'With Balance');
+      _status = m['status'] == 'Active'
+          ? 'With Balance'
+          : (m['status'] ?? 'With Balance');
       try {
         _selectedDate = DateFormat('MMM dd, yyyy').parse(m['date']);
       } catch (_) {}
@@ -70,7 +74,8 @@ class _AddMemberFormState extends State<_AddMemberForm> {
     super.dispose();
   }
 
-  double get _targetAmount => double.tryParse(_targetAmountController.text) ?? 0.0;
+  double get _targetAmount =>
+      double.tryParse(_targetAmountController.text) ?? 0.0;
   double get _amount => double.tryParse(_amountController.text) ?? 0.0;
 
   int get _monthsMissed {
@@ -92,23 +97,24 @@ class _AddMemberFormState extends State<_AddMemberForm> {
 
   double get _deficitInterest {
     if (_amount >= _targetAmount) return 0.0;
-    
+
     double deficit = _targetAmount - _amount;
     double totalDeficitInterest = 0.0;
-    
+
     DateTime cycleDate = _addOneMonth(_selectedDate);
-    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    
+    DateTime today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
     while (today.isAfter(cycleDate) || cycleDate.isAtSameMomentAs(today)) {
-       DateTime penaltyDate = cycleDate.add(const Duration(days: 5));
-       if (today.isAfter(penaltyDate) || today.isAtSameMomentAs(penaltyDate)) {
-           totalDeficitInterest += (deficit * 0.15);
-       } else {
-           totalDeficitInterest += (deficit * 0.10);
-       }
-       cycleDate = _addOneMonth(cycleDate);
+      DateTime penaltyDate = cycleDate.add(const Duration(days: 5));
+      if (today.isAfter(penaltyDate) || today.isAtSameMomentAs(penaltyDate)) {
+        totalDeficitInterest += (deficit * 0.15);
+      } else {
+        totalDeficitInterest += (deficit * 0.10);
+      }
+      cycleDate = _addOneMonth(cycleDate);
     }
-    
+
     return totalDeficitInterest;
   }
 
@@ -140,16 +146,28 @@ class _AddMemberFormState extends State<_AddMemberForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)))),
-          Text(widget.initialMember == null ? 'Add New Member' : 'Edit Member', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Center(
+              child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4)))),
+          Text(widget.initialMember == null ? 'Add New Member' : 'Edit Member',
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('Enter the details for the member below.', style: TextStyle(color: Colors.black54)),
+          const Text('Enter the details for the member below.',
+              style: TextStyle(color: Colors.black54)),
           const SizedBox(height: 24),
           _buildTextField('Full Name', Icons.person, _nameController),
           const SizedBox(height: 16),
-          _buildTextField('Amount (₱)', Icons.account_balance_wallet, _amountController, TextInputType.number),
+          _buildTextField('Amount (₱)', Icons.account_balance_wallet,
+              _amountController, TextInputType.number),
           const SizedBox(height: 16),
-          _buildTextField('Target Amount (₱)', Icons.track_changes, _targetAmountController, TextInputType.number),
+          _buildTextField('Target Amount (₱)', Icons.track_changes,
+              _targetAmountController, TextInputType.number),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _status,
@@ -158,12 +176,23 @@ class _AddMemberFormState extends State<_AddMemberForm> {
               prefixIcon: const Icon(Icons.verified_user),
               filled: true,
               fillColor: Colors.grey.shade50,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: DashboardTheme.accentColor)),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade200)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade200)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: DashboardTheme.accentColor)),
             ),
-            items: ['With Balance', 'Pending', 'With Penalty', 'Completed'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-            onChanged: (val) { if (val != null) setState(() => _status = val); },
+            items: ['With Balance', 'Pending', 'With Penalty', 'Completed']
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _status = val);
+            },
           ),
           const SizedBox(height: 16),
           InkWell(
@@ -184,7 +213,8 @@ class _AddMemberFormState extends State<_AddMemberForm> {
                     style: const TextStyle(fontSize: 16),
                   ),
                   const Spacer(),
-                  const Icon(Icons.edit, size: 16, color: DashboardTheme.accentColor),
+                  const Icon(Icons.edit,
+                      size: 16, color: DashboardTheme.accentColor),
                 ],
               ),
             ),
@@ -193,22 +223,37 @@ class _AddMemberFormState extends State<_AddMemberForm> {
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
+              decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200)),
               width: double.infinity,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Interest Calculations', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
+                  Text('Interest Calculations',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade900)),
                   const SizedBox(height: 8),
                   if (_amount < _targetAmount && _deficitInterest > 0)
-                    Text('• Deficit Penalty Evaluated: +₱${_deficitInterest.toStringAsFixed(2)}', style: TextStyle(color: Colors.orange.shade800)),
+                    Text(
+                        '• Deficit Penalty Evaluated: +₱${_deficitInterest.toStringAsFixed(2)}',
+                        style: TextStyle(color: Colors.orange.shade800)),
                   if (_monthsMissed > 0)
-                    Text('• Late Join ($_monthsMissed months missed): +₱${_lateJoinInterest.toStringAsFixed(2)} (15%)', style: TextStyle(color: Colors.orange.shade800)),
+                    Text(
+                        '• Late Join ($_monthsMissed months missed): +₱${_lateJoinInterest.toStringAsFixed(2)} (15%)',
+                        style: TextStyle(color: Colors.orange.shade800)),
                   if (_amount >= _targetAmount && _monthsMissed == 0)
-                    Text('No penalty applied. Goal met on time!', style: TextStyle(color: Colors.green.shade800)),
+                    Text('No penalty applied. Goal met on time!',
+                        style: TextStyle(color: Colors.green.shade800)),
                   if (_deficitInterest > 0 || _lateJoinInterest > 0) ...[
                     const Divider(),
-                    Text('Total Interest: ₱${(_deficitInterest + _lateJoinInterest).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade900)),
+                    Text(
+                        'Total Interest: ₱${(_deficitInterest + _lateJoinInterest).toStringAsFixed(2)}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade900)),
                   ]
                 ],
               ),
@@ -221,19 +266,26 @@ class _AddMemberFormState extends State<_AddMemberForm> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: DashboardTheme.accentColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               onPressed: () {
-                String finalStatus = _status == 'Active' ? 'With Balance' : _status;
-                if ((_deficitInterest > 0 || _lateJoinInterest > 0) && finalStatus == 'With Balance') {
+                String finalStatus =
+                    _status == 'Active' ? 'With Balance' : _status;
+                if ((_deficitInterest > 0 || _lateJoinInterest > 0) &&
+                    finalStatus == 'With Balance') {
                   finalStatus = 'With Penalty';
-                } else if (_amount >= _targetAmount && _deficitInterest == 0 && _lateJoinInterest == 0 && finalStatus == 'With Balance') {
+                } else if (_amount >= _targetAmount &&
+                    _deficitInterest == 0 &&
+                    _lateJoinInterest == 0 &&
+                    finalStatus == 'With Balance') {
                   finalStatus = 'Completed';
                 }
 
                 final newMember = {
-                  'id': widget.initialMember?['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                  'id': widget.initialMember?['id'] ??
+                      DateTime.now().millisecondsSinceEpoch.toString(),
                   'name': _nameController.text.trim(),
                   'contribution': _amount,
                   'expectedReturn': _targetAmount,
@@ -242,15 +294,28 @@ class _AddMemberFormState extends State<_AddMemberForm> {
                   'totalInterest': _deficitInterest + _lateJoinInterest,
                   'date': DateFormat('MMM dd, yyyy').format(_selectedDate),
                   'status': finalStatus,
-                  'history': widget.initialMember?['history'] ?? [
-                    {'date': DateFormat('MMM dd, yyyy').format(_selectedDate), 'type': 'Initial Deposit', 'amount': _amount}
-                  ],
+                  'history': widget.initialMember?['history'] ??
+                      [
+                        {
+                          'date':
+                              DateFormat('MMM dd, yyyy').format(_selectedDate),
+                          'type': 'Initial Deposit',
+                          'amount': _amount
+                        }
+                      ],
                   'loans': widget.initialMember?['loans'] ?? []
                 };
                 widget.onSave(newMember);
                 Navigator.pop(context);
               },
-              child: Text(widget.initialMember == null ? 'Save Member' : 'Update Member', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                  widget.initialMember == null
+                      ? 'Save Member'
+                      : 'Update Member',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 32),
@@ -259,7 +324,9 @@ class _AddMemberFormState extends State<_AddMemberForm> {
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, TextEditingController controller, [TextInputType keyboardType = TextInputType.text]) {
+  Widget _buildTextField(
+      String label, IconData icon, TextEditingController controller,
+      [TextInputType keyboardType = TextInputType.text]) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
@@ -268,11 +335,16 @@ class _AddMemberFormState extends State<_AddMemberForm> {
         prefixIcon: Icon(icon),
         filled: true,
         fillColor: Colors.grey.shade50,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: DashboardTheme.accentColor)),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: DashboardTheme.accentColor)),
       ),
     );
   }
 }
-

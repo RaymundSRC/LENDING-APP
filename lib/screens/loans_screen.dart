@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/dashboard_theme.dart';
 import '../services/storage_service.dart';
-import 'loans_widgets/loans_filter_bar.dart';
-import 'loans_widgets/loans_list.dart';
-import 'loans_widgets/add_loan_modal.dart';
+import 'loans_widgets/modals/loans_filter_bar.dart';
+import 'loans_widgets/modals/loans_list.dart';
+import 'loans_widgets/modals/add_loan_modal.dart';
 
 class LoansScreen extends StatefulWidget {
   const LoansScreen({super.key});

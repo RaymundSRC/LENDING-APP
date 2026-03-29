@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../theme/dashboard_theme.dart';
-import '../../services/storage_service.dart';
+import '../../../theme/dashboard_theme.dart';
+import '../../../services/storage_service.dart';
 
 class MemberProfileModal {
   static void show(BuildContext context, Map<String, dynamic> member,
@@ -656,7 +656,7 @@ Remaining Penalty to Pay: ₱${amount.toStringAsFixed(2)}
                               member,
                               setState,
                               onUpdate),
-                          child: const Text('Forgive to 10%'),
+                          child: const Text('Forgive 10%'),
                         ),
                       ),
                     ],
@@ -1034,8 +1034,7 @@ Remaining Penalty to Pay: ₱${amount.toStringAsFixed(2)}
                     backgroundColor:
                         isCurrentlyForgiven ? Colors.red : Colors.green));
               },
-              child: Text(
-                  isCurrentlyForgiven ? 'Restore 15%' : 'Forgive to 10%',
+              child: Text(isCurrentlyForgiven ? 'Restore 15%' : 'Forgive 10%',
                   style: const TextStyle(color: Colors.white)),
             )
           ]),

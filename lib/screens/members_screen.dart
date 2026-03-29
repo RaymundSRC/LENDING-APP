@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/dashboard_theme.dart';
-import 'members_widgets/members_filter_bar.dart';
-import 'members_widgets/members_list.dart';
-import 'members_widgets/add_member_modal.dart';
+import 'members_widgets/modals/members_filter_bar.dart';
+import 'members_widgets/modals/members_list.dart';
+import 'members_widgets/modals/add_member_modal.dart';
 import '../services/storage_service.dart';
 
 class MembersScreen extends StatefulWidget {
