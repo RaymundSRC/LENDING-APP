@@ -4,77 +4,84 @@ import 'package:intl/intl.dart';
 class LoanInterestBreakdown {
   static void show(BuildContext context, Map<String, dynamic> loan) {
     double principal = (loan['remainingPrincipal'] as num).toDouble();
-    double displayPrincipal = principal > 0 ? principal : (loan['amount'] as num).toDouble();
+    double displayPrincipal =
+        principal > 0 ? principal : (loan['amount'] as num).toDouble();
 
     DateTime cycleDate = DateFormat('MMM dd, yyyy').parse(loan['dueDate']);
-    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    
+    DateTime today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
     List<Widget> breakdownWidgets = [];
     int i = 1;
-    Map<String, dynamic> customRates = loan['customRates'] != null ? Map<String, dynamic>.from(loan['customRates']) : {};
+    Map<String, dynamic> customRates = loan['customRates'] != null
+        ? Map<String, dynamic>.from(loan['customRates'])
+        : {};
 
     while (today.isAfter(cycleDate) || cycleDate.isAtSameMomentAs(today)) {
       DateTime cyclePenaltyDate = cycleDate.add(const Duration(days: 5));
       String cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
-      
-      bool isPenalty = today.isAfter(cyclePenaltyDate) || today.isAtSameMomentAs(cyclePenaltyDate);
+
+      bool isPenalty = today.isAfter(cyclePenaltyDate) ||
+          today.isAtSameMomentAs(cyclePenaltyDate);
       double rate = isPenalty ? 0.15 : 0.10;
       bool isForgiven = false;
-      
+
       if (customRates.containsKey(cycleKey)) {
-         rate = (customRates[cycleKey] as num).toDouble();
-         if (rate <= 0.10 && isPenalty) isForgiven = true;
+        rate = (customRates[cycleKey] as num).toDouble();
+        if (rate <= 0.10 && isPenalty) isForgiven = true;
       }
-      
+
       double cost = displayPrincipal * rate;
 
       breakdownWidgets.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Cycle $i: ${DateFormat('MMM dd, yyyy').format(cycleDate)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if (isForgiven)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    'Manually Forgiven to 10%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.bold
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cycle $i: ${DateFormat('MMM dd, yyyy').format(cycleDate)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    isPenalty 
-                      ? 'Passed Grace Period on ${DateFormat('MMM dd').format(cyclePenaltyDate)} (15%)'
-                      : 'Active Grace Period til ${DateFormat('MMM dd').format(cyclePenaltyDate)} (10%)',
-                    style: TextStyle(
-                      fontSize: 12, 
-                      color: isPenalty ? Colors.red : Colors.orange
-                    ),
-                  ),
+                    const SizedBox(height: 4),
+                    if (isForgiven)
+                      Text(
+                        'Manually Forgiven to 10%',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold),
+                      )
+                    else
+                      Text(
+                        isPenalty
+                            ? 'Passed Grace Period on ${DateFormat('MMM dd').format(cyclePenaltyDate)} (15%)'
+                            : 'Active Grace Period til ${DateFormat('MMM dd').format(cyclePenaltyDate)} (10%)',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: isPenalty ? Colors.red : Colors.orange),
+                      ),
+                  ],
                 ),
-              const Spacer(),
+              ),
+              const SizedBox(width: 12),
               Text(
                 '₱${cost.toStringAsFixed(2)}',
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isForgiven ? Colors.green.shade700 : Colors.red.shade700
-                ),
+                    fontWeight: FontWeight.bold,
+                    color: isForgiven
+                        ? Colors.green.shade700
+                        : Colors.red.shade700),
               ),
             ],
           ),
         ),
       );
-      
+
       cycleDate = _addOneMonth(cycleDate);
       i++;
     }
@@ -91,10 +98,9 @@ class LoanInterestBreakdown {
               Text(
                 'Based on ${displayPrincipal.toStringAsFixed(2)} principal',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500
-                ),
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               ...breakdownWidgets,
