@@ -6,36 +6,41 @@ import '../components/loan_payment_history.dart';
 import '../components/loan_interest_breakdown.dart';
 import 'record_loan_payment_modal.dart';
 
+/// Modal for displaying comprehensive loan profile information
 class LoanProfileModal {
+  /// Shows loan profile modal with full loan details and actions
   static void show(BuildContext context, Map<String, dynamic> loan,
       {Function? onUpdate}) {
+    // onUpdate callback for UI refresh
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: true, // Allow scrolling when keyboard appears
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(24))), // Rounded top corners
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.85,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
+              expand: false, // Don't expand to full screen
+              initialChildSize: 0.85, // Initial height (85% of screen)
+              minChildSize: 0.5, // Minimum height (50% of screen)
+              maxChildSize: 0.95, // Maximum height (95% of screen)
               builder: (context, scrollController) {
+                // Determine status color based on loan status
                 Color statusColor;
                 switch (loan['status']) {
                   case 'Active':
-                    statusColor = Colors.green;
+                    statusColor = Colors.green; // Green for active loans
                     break;
                   case 'Completed':
-                    statusColor = Colors.blue;
+                    statusColor = Colors.blue; // Blue for completed loans
                     break;
                   case 'Pending':
-                    statusColor = Colors.orange;
+                    statusColor = Colors.orange; // Orange for pending loans
                     break;
                   case 'Late':
-                    statusColor = Colors.red;
+                    statusColor = Colors.red; // Red for late loans
                     break;
                   default:
                     statusColor = Colors.grey;

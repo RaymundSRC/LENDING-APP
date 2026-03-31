@@ -1,41 +1,49 @@
 import 'package:flutter/material.dart';
 
+/// Utility class for building loan interest blocks display
 class LoanInterestBlocks {
+  /// Builds interest blocks showing individual monthly interest charges
   static List<Widget> buildInterestBlocks({
-    required BuildContext context,
-    required List<Map<String, dynamic>> interestBlocks,
-    required double remainingPrincipalDB,
-    required Function(DateTime, String, bool) onShowForgiveDialog,
+    required BuildContext context, // Build context for navigation
+    required List<Map<String, dynamic>>
+        interestBlocks, // List of interest blocks
+    required double remainingPrincipalDB, // Remaining principal amount
+    required Function(DateTime, String, bool)
+        onShowForgiveDialog, // Callback for forgiveness dialog
     required Function(
             {int monthsToClear,
             double interestCost,
             double principalToPay,
             String label})
-        onProcessPayment,
+        onProcessPayment, // Callback for payment processing
   }) {
+    // Return success message if no interest blocks
     if (interestBlocks.isEmpty) {
       return [
-        const Text('Outstanding monthly interest perfectly clear.',
+        const Text(
+            'Outstanding monthly interest perfectly clear.', // Success message
             style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
       ];
     }
 
     return interestBlocks.asMap().entries.map((entry) {
-      int index = entry.key;
-      var b = entry.value;
+      int index = entry.key; // Block index
+      var b = entry.value; // Block data
       bool isActive =
           index == 0; // Only the topmost chronological block is active
 
       return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 12), // Bottom spacing
+        padding: const EdgeInsets.all(16), // Internal padding
         decoration: BoxDecoration(
-            color: b['isForgiven'] ? Colors.green.shade50 : Colors.red.shade50,
-            borderRadius: BorderRadius.circular(12),
+            color: b['isForgiven']
+                ? Colors.green.shade50
+                : Colors.red.shade50, // Background based on forgiveness
+            borderRadius: BorderRadius.circular(12), // Rounded corners
             border: Border.all(
                 color: b['isForgiven']
-                    ? Colors.green.shade200
-                    : Colors.red.shade200)),
+                    ? Colors.green.shade200 // Green border for forgiven
+                    : Colors.red.shade200)), // Red border for active
         child: Row(
           children: [
             Expanded(
@@ -47,7 +55,8 @@ class LoanInterestBlocks {
                       Icon(
                           b['isLate']
                               ? (b['isForgiven']
-                                  ? Icons.check_circle
+                                  ? Icons
+                                      .check_circle // Check icon for forgiven late
                                   : Icons.warning_rounded)
                               : Icons.info_outline,
                           size: 16,

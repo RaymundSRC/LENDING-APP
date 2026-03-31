@@ -3,91 +3,119 @@ import 'package:intl/intl.dart';
 import '../../../theme/dashboard_theme.dart';
 import '../../../services/storage_service.dart';
 
+/// Modal for adding new loans to the system
 class AddLoanModal {
+  /// Shows the add loan modal bottom sheet
   static void show(BuildContext context, {Function? onUpdate}) {
+    // onUpdate callback for UI refresh
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      isScrollControlled: true, // Allow scrolling when keyboard appears
+      backgroundColor:
+          Colors.transparent, // Transparent background for custom shape
       builder: (context) {
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            color: Colors.white, // White background for modal
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(24)), // Rounded top corners
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 24,
-            left: 24,
-            right: 24,
+            bottom: MediaQuery.of(context)
+                .viewInsets
+                .bottom, // Adjust for keyboard height
+            top: 24, // Top padding
+            left: 24, // Left padding
+            right: 24, // Right padding
           ),
-          child: _AddLoanForm(onUpdate: onUpdate),
+          child: _AddLoanForm(onUpdate: onUpdate), // Loan form widget
         );
       },
     );
   }
 }
 
+/// Form widget for adding new loans
 class _AddLoanForm extends StatefulWidget {
-  final Function? onUpdate;
+  final Function? onUpdate; // Callback for UI updates
   const _AddLoanForm({this.onUpdate});
 
   @override
   State<_AddLoanForm> createState() => _AddLoanFormState();
 }
 
+/// State management for add loan form
 class _AddLoanFormState extends State<_AddLoanForm> {
-  DateTime _borrowedDate = DateTime.now();
+  DateTime _borrowedDate = DateTime.now(); // Default to current date
 
-  final TextEditingController _borrowerController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _reasonController = TextEditingController();
+  // Form controllers
+  final TextEditingController _borrowerController =
+      TextEditingController(); // Borrower name input
+  final TextEditingController _amountController =
+      TextEditingController(); // Loan amount input
+  final TextEditingController _reasonController =
+      TextEditingController(); // Loan reason input
 
-  double _requestedAmount = 0.0;
-  double _availableFund = 0.0;
-  List<Map<String, dynamic>> _members = [];
-  List<Map<String, dynamic>> _loans = [];
+  // State variables
+  double _requestedAmount = 0.0; // Amount being requested
+  double _availableFund = 0.0; // Available funds for lending
+  List<Map<String, dynamic>> _members = []; // List of all members
+  List<Map<String, dynamic>> _loans = []; // List of all loans
 
   @override
   void initState() {
     super.initState();
-    _loadFundData();
-    _amountController.addListener(_onAmountChanged);
+    _loadFundData(); // Load initial fund data
+    _amountController
+        .addListener(_onAmountChanged); // Listen for amount changes
   }
 
   @override
   void dispose() {
-    _amountController.removeListener(_onAmountChanged);
-    _amountController.dispose();
+    _amountController.removeListener(_onAmountChanged); // Remove listener
+    _amountController.dispose(); // Dispose controllers
     _borrowerController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
 
+  /// Loads member and loan data to calculate available funds
   Future<void> _loadFundData() async {
-    print('DEBUG: Loading fund data...');
-    final members = await StorageService.loadMembers() ?? [];
-    final loans = await StorageService.loadLoans() ?? [];
+    print('DEBUG: Loading fund data...'); // Debug log
+    final members = await StorageService.loadMembers() ?? []; // Load members
+    final loans = await StorageService.loadLoans() ?? []; // Load loans
 
-    print('DEBUG: Loaded ${members.length} members and ${loans.length} loans');
+    print(
+        'DEBUG: Loaded ${members.length} members and ${loans.length} loans'); // Debug log
 
     if (mounted) {
+      // Check if widget is still mounted
       setState(() {
-        _members = members;
-        _loans = loans;
-        _availableFund = _calculateAvailableFund();
+        _members = members; // Update members list
+        _loans = loans; // Update loans list
+        _availableFund = _calculateAvailableFund(); // Calculate available funds
       });
     }
   }
 
+  /// Calculates available funds for lending
   double _calculateAvailableFund() {
-    double baseCapital = _members.fold(0.0,
-        (sum, item) => sum + ((item['contribution'] ?? 0.0) as num).toDouble());
-    double activePrincipalOut = _loans.fold(0.0,
-        (sum, l) => sum + ((l['remainingPrincipal'] ?? 0.0) as num).toDouble());
-    double available = baseCapital - activePrincipalOut;
+    double baseCapital = _members.fold(
+        0.0,
+        (sum, item) =>
+            sum +
+            ((item['contribution'] ?? 0.0) as num)
+                .toDouble()); // Sum all contributions
+    double activePrincipalOut = _loans.fold(
+        0.0,
+        (sum, l) =>
+            sum +
+            ((l['remainingPrincipal'] ?? 0.0) as num)
+                .toDouble()); // Sum outstanding loans
+    double available =
+        baseCapital - activePrincipalOut; // Calculate available amount
 
-    print('DEBUG: Fund Calculation:');
+    print('DEBUG: Fund Calculation:'); // Debug log
     print('  - Members count: ${_members.length}');
     print('  - Base Capital: ₱${baseCapital.toStringAsFixed(2)}');
     print('  - Loans count: ${_loans.length}');
@@ -98,41 +126,49 @@ class _AddLoanFormState extends State<_AddLoanForm> {
     return available;
   }
 
+  /// Handles amount input changes
   void _onAmountChanged() {
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final amount = double.tryParse(_amountController.text) ??
+        0.0; // Parse amount or default to 0
     setState(() {
-      _requestedAmount = amount;
+      _requestedAmount = amount; // Update requested amount
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    double advanceDeduction = _requestedAmount * 0.10;
-    double disbursedAmount = _requestedAmount - advanceDeduction;
-    double monthlyInterest = _requestedAmount * 0.10;
+    double advanceDeduction = _requestedAmount * 0.10; // 10% upfront deduction
+    double disbursedAmount =
+        _requestedAmount - advanceDeduction; // Amount borrower receives
+    double monthlyInterest = _requestedAmount * 0.10; // Monthly interest rate
 
-    DateTime nextDueDate = _addOneMonth(_borrowedDate);
-    DateTime penaltyDate = nextDueDate.add(const Duration(days: 5));
+    DateTime nextDueDate =
+        _addOneMonth(_borrowedDate); // Calculate next due date
+    DateTime penaltyDate = nextDueDate
+        .add(const Duration(days: 5)); // Penalty date is 5 days after due
 
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Modal handle bar
           Center(
               child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
+                  width: 40, // Handle width
+                  height: 4, // Handle height
+                  margin: const EdgeInsets.only(bottom: 24), // Bottom margin
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(4)))),
-          const Text('Issue New Loan',
+                      color: Colors.grey.shade300, // Handle color
+                      borderRadius:
+                          BorderRadius.circular(4)))), // Rounded corners
+          const Text('Issue New Loan', // Modal title
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('10% advance deduction applies. 1 month standard cycle.',
-              style: TextStyle(color: Colors.black54)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8), // Spacing
+          const Text(
+              '10% advance deduction applies. 1 month standard cycle.', // Subtitle
+              style: TextStyle(color: Colors.black54)), // Subtitle color
+          const SizedBox(height: 24), // Spacing
           _buildTextField(
               'Borrower Full Name', Icons.person, _borrowerController),
           const SizedBox(height: 16),

@@ -1,27 +1,41 @@
 import 'package:flutter/material.dart';
 import '../../theme/dashboard_theme.dart';
 
+/// Dashboard summary cards widget
+/// Displays comprehensive financial overview including funds, loans, penalties, and cash flow
 class SummaryCards extends StatelessWidget {
   final List<Map<String, dynamic>> members;
   final List<Map<String, dynamic>> loans;
   const SummaryCards({super.key, required this.members, required this.loans});
 
+  // === MAIN FINANCIAL CALCULATIONS ===
+
   @override
   Widget build(BuildContext context) {
+    // Calculate base capital from all member contributions
     double baseCapital = members.fold(0.0,
         (sum, item) => sum + ((item['contribution'] ?? 0.0) as num).toDouble());
+
+    // Calculate total loan amounts distributed
     double totalLoans = loans.fold(
         0.0, (sum, item) => sum + ((item['amount'] ?? 0.0) as num).toDouble());
 
+    // Calculate target fund amount from member expected returns
     double targetFund = members.fold(
         0.0,
         (sum, item) =>
             sum + ((item['expectedReturn'] ?? 0.0) as num).toDouble());
-    double pending = targetFund - baseCapital;
-    if (pending < 0) pending = 0;
 
+    // Calculate pending member contributions
+    double pending = targetFund - baseCapital;
+    if (pending < 0) pending = 0; // Prevent negative values
+
+    // === LOAN INTEREST CALCULATIONS ===
+
+    // Calculate paid loan interest including upfront deductions
     double paidLoanInterest = loans.fold(0.0, (sum, l) {
-      double upfrontDeduction = ((l['amount'] ?? 0.0) as num).toDouble() * 0.10;
+      double upfrontDeduction =
+          ((l['amount'] ?? 0.0) as num).toDouble() * 0.10; // 10% upfront
 
       List history = l['paymentHistory'] ?? [];
       double pInt = history.fold(
@@ -30,12 +44,19 @@ class SummaryCards extends StatelessWidget {
               hSum + ((hItem['interestPortion'] ?? 0.0) as num).toDouble());
       return sum + pInt + upfrontDeduction;
     });
+
+    // Calculate unpaid/remaining loan interest
     double unpaidLoanInterest = loans.fold(
         0.0,
         (sum, item) =>
             sum + ((item['remainingInterest'] ?? 0.0) as num).toDouble());
+
+    // Total interest generated from loans
     double totalGeneratedInterest = paidLoanInterest + unpaidLoanInterest;
 
+    // === MEMBER PENALTY CALCULATIONS ===
+
+    // Calculate paid member penalties from payment history
     double paidMemberPenalties = members.fold(0.0, (sum, m) {
       List history = m['history'] ?? [];
       double pPen = history
@@ -47,48 +68,63 @@ class SummaryCards extends StatelessWidget {
       return sum + pPen;
     });
 
+    // Calculate unpaid member penalties (deficit + late join)
     double unpaidMemberPenalties = members.fold(0.0, (sum, item) {
       double totalInt =
           (item['deficitInterest'] ?? 0.0) + (item['lateJoinInterest'] ?? 0.0);
       return sum + totalInt;
     });
 
+    // Total penalties generated from members
     double generatedMemberPenalties =
         paidMemberPenalties + unpaidMemberPenalties;
 
+    // === FUND AVAILABILITY CALCULATIONS ===
+
+    // Total fund includes capital + paid interest + paid penalties
     double totalFund = baseCapital + paidLoanInterest + paidMemberPenalties;
 
+    // Active principal still outstanding in loans
     double activePrincipalOut = loans.fold(0.0,
         (sum, l) => sum + ((l['remainingPrincipal'] ?? 0.0) as num).toDouble());
+
+    // Net liquid cash after accounting for active loans
     double netLiquidCash = totalFund - activePrincipalOut;
 
     // Available Fund calculation - money actually available for new loans
     double availableFund = baseCapital - activePrincipalOut;
 
-    // Determine fund status color and percentage
+    // Determine fund status color and percentage for visual indicators
     Color fundStatusColor = availableFund > 10000
-        ? Colors.green
+        ? Colors.green // Healthy fund level
         : availableFund > 5000
-            ? Colors.orange
-            : Colors.red;
+            ? Colors.orange // Moderate fund level
+            : Colors.red; // Low fund level
+
     double fundPercentage =
         baseCapital > 0 ? (availableFund / baseCapital) * 100 : 0;
 
+    // === UI LAYOUT ===
+
     return Column(
       children: [
+        // Primary fund overview - most important metric
         SizedBox(
           width: double.infinity,
           child: _summaryCard('Total Fund', '₱${totalFund.toStringAsFixed(2)}',
               Icons.account_balance, DashboardTheme.accentColor, true),
         ),
         const SizedBox(height: 12),
-        // Make Available Cash the main prominent card
+
+        // Available cash - most critical for decision making
         SizedBox(
           width: double.infinity,
           child: _buildAvailableCashCard(
               availableFund, fundPercentage, fundStatusColor),
         ),
         const SizedBox(height: 12),
+
+        // First row: Loan and target metrics
         Row(
           children: [
             Expanded(
@@ -104,6 +140,8 @@ class SummaryCards extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+
+        // Second row: Cash and balance metrics
         Row(
           children: [
             Expanded(
@@ -122,6 +160,8 @@ class SummaryCards extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+
+        // Third row: Generated revenue metrics
         Row(
           children: [
             Expanded(
@@ -140,6 +180,8 @@ class SummaryCards extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+
+        // Fourth row: Paid revenue metrics
         Row(
           children: [
             Expanded(
@@ -158,6 +200,8 @@ class SummaryCards extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+
+        // Fifth row: Outstanding revenue metrics
         Row(
           children: [
             Expanded(
@@ -179,6 +223,12 @@ class SummaryCards extends StatelessWidget {
     );
   }
 
+  // === END OF UI LAYOUT ===
+
+  // === CUSTOM WIDGETS ===
+
+  /// Builds a standard summary card with consistent styling
+  /// Used for most financial metrics display
   Widget _summaryCard(String title, String value, IconData icon,
       [Color? color, bool isLarge = false]) {
     final c = color ?? DashboardTheme.accentColor;
@@ -204,7 +254,7 @@ class SummaryCards extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             FittedBox(
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.scaleDown, // Prevent text overflow
               child: Text(
                 value,
                 style: TextStyle(
@@ -220,10 +270,12 @@ class SummaryCards extends StatelessWidget {
     );
   }
 
+  /// Builds the prominent available cash card with status indicator
+  /// This is the most important card for loan decision making
   Widget _buildAvailableCashCard(
       double availableFund, double percentage, Color statusColor) {
     return Card(
-      elevation: 4,
+      elevation: 4, // Higher elevation for prominence
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
@@ -241,6 +293,7 @@ class SummaryCards extends StatelessWidget {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
+              // Header with icon and status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -275,6 +328,7 @@ class SummaryCards extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // Status badge
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -294,6 +348,8 @@ class SummaryCards extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
+
+              // Amount and progress indicator
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -305,7 +361,8 @@ class SummaryCards extends StatelessWidget {
                       color: statusColor,
                     ),
                   ),
-                  // Status indicator
+
+                  // Progress bar showing fund availability percentage
                   Container(
                     width: 60,
                     height: 8,
@@ -315,7 +372,8 @@ class SummaryCards extends StatelessWidget {
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
-                      widthFactor: (percentage / 100).clamp(0.0, 1.0),
+                      widthFactor: (percentage / 100)
+                          .clamp(0.0, 1.0), // Prevent overflow
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
@@ -332,4 +390,6 @@ class SummaryCards extends StatelessWidget {
       ),
     );
   }
+
+  // === END OF CUSTOM WIDGETS ===
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 
+/// Authentication screen for PIN-based login and setup
+/// Handles first-time setup, PIN validation, and account recovery
 class AuthScreen extends StatefulWidget {
   final VoidCallback? onAuthenticated;
 
@@ -11,7 +13,10 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
+/// State management for authentication screen
 class _AuthScreenState extends State<AuthScreen> {
+  // === CONTROLLERS AND STATE ===
+
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _newPinController = TextEditingController();
   final TextEditingController _confirmPinController = TextEditingController();
@@ -22,7 +27,9 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isSetupMode = false;
   String? _selectedSecurityQuestion;
   String? _errorMessage;
-  List<bool> _pinDots = List.filled(6, false);
+  List<bool> _pinDots = List.filled(6, false); // Visual PIN indicator
+
+  // === INITIALIZATION ===
 
   @override
   void initState() {
@@ -30,6 +37,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _checkFirstTime();
   }
 
+  /// Checks if this is first-time use or if PIN needs to be set
   Future<void> _checkFirstTime() async {
     final firstTime = await AuthService.isFirstTime();
     final pinSet = await AuthService.isPinSet();
@@ -40,6 +48,9 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  // === PIN INPUT HANDLING ===
+
+  /// Handles number button presses with haptic feedback
   void _onNumberPressed(String number) {
     if (_enteredPin.length < 6) {
       setState(() {
@@ -48,7 +59,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _errorMessage = null;
       });
 
-      HapticFeedback.lightImpact();
+      HapticFeedback.lightImpact(); // Tactile feedback
 
       if (_enteredPin.length >= 4) {
         _handlePinSubmit();
@@ -56,6 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  /// Handles delete/backspace functionality
   void _onDeletePressed() {
     if (_enteredPin.isNotEmpty) {
       setState(() {
@@ -67,6 +79,9 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  // === AUTHENTICATION LOGIC ===
+
+  /// Processes PIN submission for login or setup
   Future<void> _handlePinSubmit() async {
     if (_isSetupMode) {
       if (_enteredPin.length < 4) {
@@ -86,11 +101,14 @@ class _AuthScreenState extends State<AuthScreen> {
           _enteredPin = '';
           _pinDots = List.filled(6, false);
         });
-        HapticFeedback.heavyImpact();
+        HapticFeedback.heavyImpact(); // Error feedback
       }
     }
   }
 
+  // === SECURITY QUESTION SETUP ===
+
+  /// Shows dialog for setting up security question during first-time setup
   void _showSecurityQuestionSetup() {
     showDialog(
       context: context,
@@ -162,6 +180,9 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  // === ACCOUNT RECOVERY ===
+
+  /// Shows recovery dialog for PIN reset via security question
   void _showRecoveryDialog() {
     showDialog(
       context: context,
@@ -234,6 +255,7 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  /// Shows PIN reset dialog after successful security question verification
   void _showPinResetDialog() {
     showDialog(
       context: context,
@@ -295,6 +317,9 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  // === UTILITY METHODS ===
+
+  /// Clears PIN input and resets visual indicators
   void _clearPin() {
     setState(() {
       _enteredPin = '';
@@ -303,10 +328,13 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  // === UI BUILDING ===
+
+  /// Builds the authentication screen UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF263238),
+      backgroundColor: const Color(0xFF263238), // Dark theme background
       body: SafeArea(
         child: Column(
           children: [
@@ -354,7 +382,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 48),
 
-                    // PIN Dots
+                    // PIN Dots - Visual feedback for PIN entry
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(6, (index) {
@@ -387,12 +415,12 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
 
-            // Number Pad
+            // Number Pad Section
             Container(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Number Rows
+                  // Number Rows (1-9)
                   for (final row in [
                     ['1', '2', '3'],
                     ['4', '5', '6'],
@@ -420,7 +448,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         const SizedBox(width: 80),
                       ] else ...[
-                        const SizedBox(width: 80),
+                        const SizedBox(width: 80), // Spacer for setup mode
                       ],
                       _NumberButton(
                         number: '0',
@@ -441,6 +469,11 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  // === END OF UI BUILDING ===
+
+  // === CLEANUP ===
+
+  /// Disposes controllers to prevent memory leaks
   @override
   void dispose() {
     _pinController.dispose();
@@ -449,8 +482,13 @@ class _AuthScreenState extends State<AuthScreen> {
     _answerController.dispose();
     super.dispose();
   }
+
+  // === END OF CLEANUP ===
 }
 
+// === CUSTOM WIDGETS ===
+
+/// Number button for PIN entry with consistent styling
 class _NumberButton extends StatelessWidget {
   final String number;
   final VoidCallback onPressed;
@@ -486,6 +524,7 @@ class _NumberButton extends StatelessWidget {
   }
 }
 
+/// Delete/backspace button for PIN correction
 class _DeleteButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -516,6 +555,7 @@ class _DeleteButton extends StatelessWidget {
   }
 }
 
+/// Recovery button for account recovery access
 class _RecoveryButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -531,7 +571,7 @@ class _RecoveryButton extends StatelessWidget {
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          color: Colors.orange.shade800,
+          color: Colors.orange.shade800, // Distinct color for recovery
           borderRadius: BorderRadius.circular(30),
         ),
         child: const Center(
@@ -545,3 +585,5 @@ class _RecoveryButton extends StatelessWidget {
     );
   }
 }
+
+// === END OF CUSTOM WIDGETS ===

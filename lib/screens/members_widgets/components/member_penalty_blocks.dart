@@ -2,31 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../services/storage_service.dart';
 
+/// Utility class for managing member penalty blocks and calculations
 class MemberPenaltyBlocks {
+  // === DEFICIT PENALTY CALCULATIONS ===
+
+  /// Builds granular deficit penalty blocks for each payment cycle
   static List<Widget> buildGranularDeficitBlocks({
     required BuildContext context,
     required Map<String, dynamic> member,
     required Function(Map<String, dynamic>)? onUpdate,
     required StateSetter setState,
   }) {
-    DateTime joined = DateFormat('MMM dd, yyyy').parse(member['joinedDate']);
-    DateTime today =
+    // Initialize date calculations
+    final joined = DateFormat('MMM dd, yyyy').parse(member['joinedDate']);
+    final today =
         DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    List<Map<String, dynamic>> blocks = [];
-    DateTime cycleDate = DateTime(joined.year, joined.month + 1, 1);
+    final blocks = <Map<String, dynamic>>[];
+    var cycleDate = DateTime(joined.year, joined.month + 1, 1);
 
-    Map<String, dynamic> customRates = member['customRates'] != null
+    // Load custom penalty rates with null safety
+    final customRates = member['customRates'] != null
         ? Map<String, dynamic>.from(member['customRates'])
-        : {};
+        : <String, dynamic>{};
 
+    // Process each payment cycle from join date to today
     while (cycleDate.isBefore(today) || cycleDate.isAtSameMomentAs(today)) {
-      double target = (member['expectedReturn'] as num).toDouble();
-      double contributionAsOfCycle = 0.0;
+      final target = (member['expectedReturn'] as num).toDouble();
+      var contributionAsOfCycle = 0.0;
 
+      // Calculate total contributions up to current cycle
       if (member['contributions'] != null) {
         for (var contrib in member['contributions']) {
-          DateTime contribDate =
-              DateFormat('MMM dd, yyyy').parse(contrib['date']);
+          final contribDate = DateFormat('MMM dd, yyyy').parse(contrib['date']);
           if (contribDate.isBefore(cycleDate) ||
               contribDate.isAtSameMomentAs(cycleDate)) {
             contributionAsOfCycle += (contrib['amount'] as num).toDouble();
@@ -34,16 +41,18 @@ class MemberPenaltyBlocks {
         }
       }
 
-      double currentDeficit = target - contributionAsOfCycle;
-      bool isLate = false;
-      bool isForgiven = false;
-      double appliedRate = 0.10;
+      final currentDeficit = target - contributionAsOfCycle;
+      var isLate = false;
+      var isForgiven = false;
+      var appliedRate = 0.10;
 
+      // Calculate penalty if deficit exists
       if (currentDeficit > 0) {
-        String cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
-        DateTime cyclePenaltyDate =
+        final cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
+        final cyclePenaltyDate =
             cycleDate.add(Duration(days: member['gracePeriod'] ?? 5));
 
+        // Check for custom rates (forgiven penalties)
         if (customRates.containsKey(cycleKey)) {
           appliedRate = (customRates[cycleKey] as num).toDouble();
           if (appliedRate <= 0.10 &&
@@ -54,11 +63,11 @@ class MemberPenaltyBlocks {
           }
         } else if (today.isAfter(cyclePenaltyDate) ||
             today.isAtSameMomentAs(cyclePenaltyDate)) {
-          appliedRate = 0.15;
+          appliedRate = 0.15; // Apply higher rate after grace period
           isLate = true;
         }
 
-        double generated = currentDeficit * appliedRate;
+        final generated = currentDeficit * appliedRate;
 
         blocks.add({
           'month': DateFormat('MMMM yyyy').format(cycleDate),
@@ -69,25 +78,27 @@ class MemberPenaltyBlocks {
         });
       }
 
+      // Move to next month
       cycleDate = DateTime(cycleDate.year, cycleDate.month + 1, 1);
     }
 
+    // Return empty state if no penalties
     if (blocks.isEmpty) {
       return [
-        const Text(
-          'No outstanding penalties detected.',
-          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-        )
+        const Text('No outstanding penalties detected.',
+            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
       ];
     }
 
+    // Build UI blocks for each penalty
     return blocks.map((b) {
-      double owed = b['generated'];
-      bool isActive = blocks.indexOf(b) == 0;
+      final owed = b['generated'] as double;
+      final isActive = blocks.indexOf(b) == 0; // First block is active
 
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
+        // Color coding: green for forgiven, red for active
         decoration: BoxDecoration(
           color: b['isForgiven'] ? Colors.green.shade50 : Colors.red.shade50,
           borderRadius: BorderRadius.circular(12),
@@ -98,10 +109,12 @@ class MemberPenaltyBlocks {
         ),
         child: Row(
           children: [
+            // Penalty information section
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Status icon and month label
                   Row(
                     children: [
                       Icon(
@@ -120,11 +133,10 @@ class MemberPenaltyBlocks {
                         child: Text(
                           '${b['month']} Penalty',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: b['isForgiven']
-                                ? Colors.green.shade900
-                                : Colors.red.shade900,
-                          ),
+                              fontWeight: FontWeight.bold,
+                              color: b['isForgiven']
+                                  ? Colors.green.shade900
+                                  : Colors.red.shade900),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -132,29 +144,27 @@ class MemberPenaltyBlocks {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  // Penalty amount
                   Text(
                     '₱${owed.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: b['isForgiven']
-                          ? Colors.green.shade800
-                          : Colors.red.shade800,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        fontSize: 16,
+                        color: b['isForgiven']
+                            ? Colors.green.shade800
+                            : Colors.red.shade800,
+                        fontWeight: FontWeight.bold),
                   ),
+                  // Status indicators and actions
                   if (b['isForgiven'])
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Row(
                         children: [
-                          Text(
-                            'Manually Forgiven (10%) ',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text('Manually Forgiven (10%) ',
+                              style: TextStyle(
+                                  color: Colors.green.shade700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
                           if (isActive)
                             GestureDetector(
                               onTap: () => MemberPenaltyDialog.show(
@@ -166,15 +176,12 @@ class MemberPenaltyBlocks {
                                 setState: setState,
                                 onUpdate: onUpdate,
                               ),
-                              child: Text(
-                                '[Restore]',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
+                              child: Text('[Restore]',
+                                  style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline)),
                             ),
                         ],
                       ),
@@ -182,28 +189,22 @@ class MemberPenaltyBlocks {
                   else if (!b['isLate'])
                     FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(
-                        '10% Grace Active',
-                        style: TextStyle(
-                          color: Colors.red.shade400,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: Text('10% Grace Active',
+                          style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
                     )
                   else
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Row(
                         children: [
-                          Text(
-                            '15% Penalty Rate',
-                            style: TextStyle(
-                              color: Colors.red.shade700,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text('15% Penalty Rate',
+                              style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
                           if (isActive)
                             GestureDetector(
                               onTap: () => MemberPenaltyDialog.show(
@@ -215,15 +216,12 @@ class MemberPenaltyBlocks {
                                 setState: setState,
                                 onUpdate: onUpdate,
                               ),
-                              child: Text(
-                                '[Adjust]',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
+                              child: Text('[Adjust]',
+                                  style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline)),
                             ),
                         ],
                       ),
@@ -232,16 +230,24 @@ class MemberPenaltyBlocks {
               ),
             ),
             const SizedBox(width: 8),
+            // Action buttons or lock icon
             if (isActive)
               _buildActiveButtons(context, b, member, setState, onUpdate)
             else
-              const Icon(Icons.lock_rounded, color: Colors.redAccent, size: 24),
+              const Icon(Icons.lock_rounded,
+                  color: Colors.redAccent,
+                  size: 24), // Inactive penalties are locked
           ],
         ),
       );
     }).toList();
   }
 
+  // === END OF DEFICIT PENALTY CALCULATIONS ===
+
+  // === ACTIVE PENALTY CONTROLS ===
+
+  /// Builds action buttons for active penalty blocks
   static Widget _buildActiveButtons(
     BuildContext context,
     Map<String, dynamic> b,
@@ -251,6 +257,7 @@ class MemberPenaltyBlocks {
   ) {
     return Column(
       children: [
+        // Primary payment button
         Row(
           children: [
             Expanded(
@@ -265,25 +272,22 @@ class MemberPenaltyBlocks {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
-                onPressed: () {
-                  _showPaymentDialog(
-                    context: context,
-                    label: '${b['month']} Deficit Penalty',
-                    owed: b['generated'],
-                    member: member,
-                    setState: setState,
-                    onUpdate: onUpdate,
-                  );
-                },
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child:
-                      const Text('Pay Month', style: TextStyle(fontSize: 12)),
+                onPressed: () => _showPaymentDialog(
+                  context: context,
+                  label: '${b['month']} Deficit Penalty',
+                  owed: b['generated'],
+                  member: member,
+                  setState: setState,
+                  onUpdate: onUpdate,
                 ),
+                child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Pay Month', style: TextStyle(fontSize: 12))),
               ),
             ),
           ],
         ),
+        // Forgiveness option for late penalties
         if (b['isLate'] && !b['isForgiven']) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -305,20 +309,20 @@ class MemberPenaltyBlocks {
                 setState: setState,
                 onUpdate: onUpdate,
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.favorite_border, size: 16),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Forgive 10%',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                  Icon(Icons.favorite_border, size: 16),
+                  SizedBox(width: 8),
+                  Text('Forgive 10%',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
           ),
         ],
+        // Restore option for forgiven penalties
         if (b['isForgiven']) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -340,15 +344,14 @@ class MemberPenaltyBlocks {
                 setState: setState,
                 onUpdate: onUpdate,
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.restore, size: 16),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Restore 15%',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                  Icon(Icons.restore, size: 16),
+                  SizedBox(width: 8),
+                  Text('Restore 15%',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -358,6 +361,11 @@ class MemberPenaltyBlocks {
     );
   }
 
+  // === END OF ACTIVE PENALTY CONTROLS ===
+
+  // === PAYMENT PROCESSING ===
+
+  /// Shows payment confirmation dialog and processes payment
   static void _showPaymentDialog({
     required BuildContext context,
     required String label,
@@ -371,20 +379,19 @@ class MemberPenaltyBlocks {
       builder: (ctx) => AlertDialog(
         title: Text('Pay $label'),
         content: Text(
-          'Confirm payment of ₱${owed.toStringAsFixed(2)}? This will clear the penalty for this month.',
-        ),
+            'Confirm payment of ₱${owed.toStringAsFixed(2)}? This will clear the penalty for this month.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          // Process payment on confirmation
           ElevatedButton(
             style:
                 ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () {
-              Navigator.pop(ctx);
+              Navigator.pop(ctx); // Close dialog
               setState(() {
-                List history = member['history'] ?? [];
+                // Record payment in history
+                final history = member['history'] ?? [];
                 history.add({
                   'date': DateFormat('MMM dd, yyyy').format(DateTime.now()),
                   'type': 'Deficit Penalty Paid',
@@ -392,15 +399,18 @@ class MemberPenaltyBlocks {
                 });
                 member['history'] = history;
 
+                // Update deficit interest
                 member['deficitInterest'] =
                     (member['deficitInterest'] ?? 0.0) - owed;
                 if (member['deficitInterest'] < 0) {
-                  member['deficitInterest'] = 0.0;
+                  member['deficitInterest'] = 0.0; // Prevent negative values
                 }
 
+                // Recalculate total interest
                 member['totalInterest'] = (member['deficitInterest'] ?? 0.0) +
                     (member['lateJoinInterest'] ?? 0.0);
 
+                // Update member status
                 if (member['totalInterest'] <= 0) {
                   if ((member['contribution'] as num).toDouble() >=
                       (member['expectedReturn'] as num).toDouble()) {
@@ -411,13 +421,14 @@ class MemberPenaltyBlocks {
                 }
               });
 
+              // Notify parent of changes
               if (onUpdate != null) onUpdate(member);
 
+              // Show success feedback
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                      '₱${owed.toStringAsFixed(2)} paid successfully towards $label!'),
-                ),
+                    content: Text(
+                        '₱${owed.toStringAsFixed(2)} paid successfully towards $label!')),
               );
             },
             child:
@@ -427,9 +438,15 @@ class MemberPenaltyBlocks {
       ),
     );
   }
+
+  // === END OF PAYMENT PROCESSING ===
 }
 
+/// Dialog handler for penalty forgiveness and restoration
 class MemberPenaltyDialog {
+  // === PENALTY ADJUSTMENT DIALOG ===
+
+  /// Shows dialog to forgive or restore penalty rates
   static void show({
     required BuildContext context,
     required DateTime cycleDate,
@@ -450,46 +467,46 @@ class MemberPenaltyDialog {
             : 'Permanently forgive the 15% penalty for $monthLabel, reducing it to 10%?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          // Process penalty adjustment
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: isCurrentlyForgiven ? Colors.red : Colors.green,
-            ),
+                backgroundColor:
+                    isCurrentlyForgiven ? Colors.red : Colors.green),
             onPressed: () async {
-              Navigator.pop(ctx);
+              Navigator.pop(ctx); // Close dialog
 
-              String cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
-              Map<String, dynamic> customRates = member['customRates'] != null
+              final cycleKey = DateFormat('MMM dd, yyyy').format(cycleDate);
+              final customRates = member['customRates'] != null
                   ? Map<String, dynamic>.from(member['customRates'])
-                  : {};
+                  : <String, dynamic>{};
 
+              // Update custom rates based on action
               if (isCurrentlyForgiven) {
-                customRates.remove(cycleKey);
+                customRates.remove(cycleKey); // Remove forgiveness
               } else {
-                customRates[cycleKey] = 0.10;
+                customRates[cycleKey] = 0.10; // Apply 10% rate
               }
 
               member['customRates'] = customRates;
 
-              // Recalculate deficit interest
-              DateTime joined =
+              // Recalculate all deficit interest
+              final joined =
                   DateFormat('MMM dd, yyyy').parse(member['joinedDate']);
-              DateTime today = DateTime(DateTime.now().year,
-                  DateTime.now().month, DateTime.now().day);
-              DateTime calcCycleDate =
-                  DateTime(joined.year, joined.month + 1, 1);
-              double generatedDeficitInterest = 0.0;
-              double target = (member['expectedReturn'] as num).toDouble();
+              final today = DateTime(DateTime.now().year, DateTime.now().month,
+                  DateTime.now().day);
+              var calcCycleDate = DateTime(joined.year, joined.month + 1, 1);
+              var generatedDeficitInterest = 0.0;
+              final target = (member['expectedReturn'] as num).toDouble();
 
+              // Process each cycle to recalculate penalties
               while (calcCycleDate.isBefore(today) ||
                   calcCycleDate.isAtSameMomentAs(today)) {
-                double contributionAsOfCycle = 0.0;
+                var contributionAsOfCycle = 0.0;
 
                 if (member['contributions'] != null) {
                   for (var contrib in member['contributions']) {
-                    DateTime contribDate =
+                    final contribDate =
                         DateFormat('MMM dd, yyyy').parse(contrib['date']);
                     if (contribDate.isBefore(calcCycleDate) ||
                         contribDate.isAtSameMomentAs(calcCycleDate)) {
@@ -499,14 +516,15 @@ class MemberPenaltyDialog {
                   }
                 }
 
-                double currentDeficit = target - contributionAsOfCycle;
+                final currentDeficit = target - contributionAsOfCycle;
                 if (currentDeficit > 0) {
-                  String calcCycleKey =
+                  final calcCycleKey =
                       DateFormat('MMM dd, yyyy').format(calcCycleDate);
-                  double appliedRate = 0.10;
-                  DateTime cyclePenaltyDate = calcCycleDate
+                  var appliedRate = 0.10;
+                  final cyclePenaltyDate = calcCycleDate
                       .add(Duration(days: member['gracePeriod'] ?? 5));
 
+                  // Apply custom or default rate
                   if (customRates.containsKey(calcCycleKey)) {
                     appliedRate = (customRates[calcCycleKey] as num).toDouble();
                   } else if (today.isAfter(cyclePenaltyDate) ||
@@ -521,14 +539,15 @@ class MemberPenaltyDialog {
                     DateTime(calcCycleDate.year, calcCycleDate.month + 1, 1);
               }
 
+              // Update member data
               member['deficitInterest'] = generatedDeficitInterest;
               member['totalInterest'] = generatedDeficitInterest +
                   (member['lateJoinInterest'] ?? 0.0);
 
-              // Save to storage
-              List<Map<String, dynamic>> members =
-                  await StorageService.loadMembers() ?? [];
-              int index = members.indexWhere((m) => m['id'] == member['id']);
+              // Persist changes to storage
+              final members = await StorageService.loadMembers() ??
+                  <Map<String, dynamic>>[];
+              final index = members.indexWhere((m) => m['id'] == member['id']);
               if (index != -1) {
                 members[index]['customRates'] = customRates;
                 members[index]['deficitInterest'] = member['deficitInterest'];
@@ -536,9 +555,10 @@ class MemberPenaltyDialog {
                 await StorageService.saveMembers(members);
               }
 
-              setState(() {});
+              setState(() {}); // Refresh UI
               if (onUpdate != null) onUpdate(member);
 
+              // Show success feedback
               ScaffoldMessenger.of(ctx).showSnackBar(
                 SnackBar(
                   content: Text(isCurrentlyForgiven
@@ -549,13 +569,13 @@ class MemberPenaltyDialog {
                 ),
               );
             },
-            child: Text(
-              isCurrentlyForgiven ? 'Restore 15%' : 'Forgive 10%',
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text(isCurrentlyForgiven ? 'Restore 15%' : 'Forgive 10%',
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
+
+  // === END OF PENALTY ADJUSTMENT DIALOG ===
 }

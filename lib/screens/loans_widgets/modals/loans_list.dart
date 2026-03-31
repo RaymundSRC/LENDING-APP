@@ -2,42 +2,47 @@ import 'package:flutter/material.dart';
 import '../../../services/storage_service.dart';
 import './loan_profile_modal.dart';
 
+/// List widget for displaying all loans with actions
 class LoansList extends StatelessWidget {
-  final List<Map<String, dynamic>> loans;
-  final Function? onUpdate;
+  final List<Map<String, dynamic>> loans; // List of loans to display
+  final Function? onUpdate; // Callback for UI updates
 
   const LoansList({super.key, required this.loans, this.onUpdate});
 
+  /// Shows edit/delete options for a specific loan
   void _showEditDeleteDialog(BuildContext context, Map<String, dynamic> loan) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+      backgroundColor: Colors.transparent, // Transparent for custom shape
+      isScrollControlled: true, // Allow scrolling when keyboard appears
       builder: (context) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxHeight: MediaQuery.of(context).size.height *
+              0.85, // Max height 85% of screen
         ),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          color: Colors.white, // White background
+          borderRadius: BorderRadius.vertical(
+              top: Radius.circular(24)), // Rounded top corners
         ),
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 24,
+          bottom:
+              MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard
+          left: 24, // Left padding
+          right: 24, // Right padding
+          top: 24, // Top padding
         ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
+              // Modal handle bar
               Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
+                width: 40, // Handle width
+                height: 4, // Handle height
+                margin: const EdgeInsets.only(bottom: 24), // Bottom margin
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Colors.grey.shade300, // Handle color
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),

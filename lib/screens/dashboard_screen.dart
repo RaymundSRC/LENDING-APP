@@ -29,12 +29,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadData() async {
     final members = await StorageService.loadMembers() ?? [];
     final loans = await StorageService.loadLoans() ?? [];
-    if (mounted)
+    if (mounted) {
       setState(() {
         _members = members;
         _loans = loans;
         _isLoading = false;
       });
+    }
   }
 
   @override

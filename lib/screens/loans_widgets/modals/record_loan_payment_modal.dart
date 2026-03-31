@@ -3,35 +3,44 @@ import 'package:intl/intl.dart';
 import '../../../services/storage_service.dart';
 import '../../../theme/dashboard_theme.dart';
 
+/// Modal for recording loan payments with principal and interest breakdown
 class RecordLoanPaymentModal {
+  /// Shows the loan payment recording modal
   static void show(BuildContext context, Map<String, dynamic> loan,
       {Function? onUpdate}) {
+    // onUpdate callback for UI refresh
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      isScrollControlled: true, // Allow scrolling when keyboard appears
+      backgroundColor:
+          Colors.transparent, // Transparent background for custom shape
       builder: (context) {
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            color: Colors.white, // White background for modal
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(24)), // Rounded top corners
           ),
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 24,
-            left: 24,
-            right: 24,
+            bottom: MediaQuery.of(context)
+                .viewInsets
+                .bottom, // Adjust for keyboard height
+            top: 24, // Top padding
+            left: 24, // Left padding
+            right: 24, // Right padding
           ),
-          child: _RecordPaymentForm(loan: loan, onUpdate: onUpdate),
+          child: _RecordPaymentForm(
+              loan: loan, onUpdate: onUpdate), // Payment form widget
         );
       },
     );
   }
 }
 
+/// Form widget for recording loan payments
 class _RecordPaymentForm extends StatefulWidget {
-  final Map<String, dynamic> loan;
-  final Function? onUpdate;
+  final Map<String, dynamic> loan; // Loan data
+  final Function? onUpdate; // Callback for UI updates
 
   const _RecordPaymentForm({required this.loan, this.onUpdate});
 
